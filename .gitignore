@@ -1,0 +1,6 @@
+/application/logs/log-*.php
+/application/logs/log-*.html
+/application/cache/*
+!/application/cache/index.html
+.DS_Store
+Thumbs.db
