@@ -1,5 +1,5 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
-<div class="container d-flex align-items-center justify-content-center min-vh-100" style="margin-top: -30px; margin-bottom: 30px;">
+<div class="container d-flex flex-column align-items-center justify-content-center min-vh-100" style="margin-top: -10px; margin-bottom: 20px;">
     <div class="row w-100 justify-content-center">
         <div class="col-md-6 col-lg-5">
             <!-- Flash Message Alerts -->
@@ -78,6 +78,11 @@
                         <p class="text-muted small mb-0">Sudah memiliki akun? <a href="<?= site_url('auth/login'); ?>" class="fw-bold text-decoration-none">Masuk ke Sistem</a></p>
                     </div>
                 </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <p class="text-muted small mb-0">&copy; <?= date('Y'); ?> <strong>POS & Inventory System</strong>. All rights reserved.</p>
+                <p class="text-muted small mb-0">Built with <span class="text-danger"><i class="bi bi-heart-fill"></i></span> using CodeIgniter 3 & Bootstrap 5</p>
             </div>
         </div>
     </div>

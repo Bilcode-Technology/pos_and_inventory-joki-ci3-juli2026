@@ -100,8 +100,8 @@ class Produk_model extends CI_Model {
      * @return bool
      */
     public function has_transactions($id) {
-        $sales = $this->db->get_where('detail_penjualan', array('id_produk' => $id))->count_all_results();
-        $purchases = $this->db->get_where('detail_pembelian', array('id_produk' => $id))->count_all_results();
+        $sales = $this->db->get_where('detail_penjualan', array('id_produk' => $id))->num_rows();
+        $purchases = $this->db->get_where('detail_pembelian', array('id_produk' => $id))->num_rows();
         return ($sales > 0 || $purchases > 0);
     }
 

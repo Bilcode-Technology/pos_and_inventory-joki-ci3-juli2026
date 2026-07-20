@@ -22,6 +22,7 @@ class Auth extends CI_Controller {
         }
 
         $data['title'] = 'Login System';
+        $data['is_auth'] = TRUE;
         $this->load->view('layout/header', $data);
         $this->load->view('auth/login_view', $data);
         $this->load->view('layout/footer', $data);
@@ -70,6 +71,7 @@ class Auth extends CI_Controller {
         }
 
         $data['title'] = 'Register Account';
+        $data['is_auth'] = TRUE;
         $this->load->view('layout/header', $data);
         $this->load->view('auth/register_view', $data);
         $this->load->view('layout/footer', $data);

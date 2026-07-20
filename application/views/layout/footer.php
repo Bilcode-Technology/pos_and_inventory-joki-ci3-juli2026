@@ -1,23 +1,25 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
+<?php if (isset($is_auth) && $is_auth): ?>
+    <!-- /#auth-wrapper -->
+<?php else: ?>
     </main>
     <!-- /.container-fluid -->
 
     <!-- Footer -->
-    <footer class="bg-white border-top py-3 px-4 text-center text-sm-start d-flex flex-column flex-sm-row justify-content-between align-items-center mt-auto">
+    <footer
+        class="bg-white border-top py-3 px-4 text-center text-sm-start d-flex flex-column flex-sm-row justify-content-between align-items-center mt-auto">
         <div class="text-muted small">
             &copy; <?= date('Y'); ?> <strong>POS & Inventory System</strong>. All rights reserved.
         </div>
-        <div class="text-muted small">
+        <!-- <div class="text-muted small">
             Built with <span class="text-danger"><i class="bi bi-heart-fill"></i></span> using CodeIgniter 3 & Bootstrap 5
-        </div>
+        </div> -->
     </footer>
-</div>
-<!-- /#page-content-wrapper -->
-</div>
-<!-- /#wrapper -->
-
-<!-- jQuery 3.7.1 CDN -->
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    </div>
+    <!-- /#page-content-wrapper -->
+    </div>
+    <!-- /#wrapper -->
+<?php endif; ?>
 
 <!-- Bootstrap 5 Bundle JS via CDN -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -31,15 +33,15 @@
     var csrfTokenName = '<?= $this->security->get_csrf_token_name(); ?>';
     var csrfTokenHash = '<?= $this->security->get_csrf_hash(); ?>';
 
-    $(document).ready(function() {
+    $(document).ready(function () {
         // Sidebar Toggle for Mobile / Tablets
-        $('#sidebarToggle').on('click', function(e) {
+        $('#sidebarToggle').on('click', function (e) {
             e.preventDefault();
             $('#sidebar').toggleClass('toggled');
         });
 
         // Automatically append CSRF token to all POST AJAX requests
-        $.ajaxPrefilter(function(options, originalOptions, jqXHR) {
+        $.ajaxPrefilter(function (options, originalOptions, jqXHR) {
             if (options.type.toLowerCase() === 'post') {
                 if (typeof options.data === 'string' && options.data.indexOf(csrfTokenName) === -1) {
                     options.data += (options.data ? '&' : '') + csrfTokenName + '=' + encodeURIComponent(csrfTokenHash);
@@ -54,7 +56,7 @@
         });
 
         // Update CSRF token hash if returned in AJAX JSON response (when csrf_regenerate = TRUE)
-        $(document).ajaxComplete(function(event, xhr, settings) {
+        $(document).ajaxComplete(function (event, xhr, settings) {
             try {
                 var res = JSON.parse(xhr.responseText);
                 if (res && res.csrf_token) {
@@ -91,4 +93,5 @@
     }
 </script>
 </body>
+
 </html>

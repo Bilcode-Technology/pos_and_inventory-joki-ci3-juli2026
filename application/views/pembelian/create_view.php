@@ -4,8 +4,10 @@
     <div class="col-lg-8 mb-4">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-                <span class="fw-bold text-dark fs-5"><i class="bi bi-truck text-primary me-2"></i> Keranjang Pembelian Stok</span>
-                <span class="badge bg-secondary-subtle text-secondary border">PO Ref: <strong><?= $no_referensi; ?></strong></span>
+                <span class="fw-bold text-dark fs-5"><i class="bi bi-truck text-primary me-2"></i> Keranjang Pembelian
+                    Stok</span>
+                <span class="badge bg-secondary-subtle text-secondary border">PO Ref:
+                    <strong><?= $no_referensi; ?></strong></span>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive" style="min-height: 350px;">
@@ -37,8 +39,10 @@
                             <h2 class="fw-extrabold text-primary mb-0" id="purchaseGrandTotalDisplay">Rp0,00</h2>
                         </div>
                         <div class="col-sm-6 text-center text-sm-end">
-                            <button type="button" class="btn btn-outline-secondary btn-lg me-2" id="clearPurchaseCart"><i class="bi bi-trash"></i> Reset</button>
-                            <button type="button" class="btn btn-primary btn-lg px-4 shadow" id="btnSubmitPurchase"><i class="bi bi-save"></i> Simpan Pembelian</button>
+                            <button type="button" class="btn btn-outline-secondary btn-lg me-2"
+                                id="clearPurchaseCart"><i class="bi bi-trash"></i> Reset</button>
+                            <button type="button" class="btn btn-primary btn-lg px-4 shadow" id="btnSubmitPurchase"><i
+                                    class="bi bi-save"></i> Simpan Pembelian</button>
                         </div>
                     </div>
                 </div>
@@ -51,11 +55,13 @@
         <!-- Supplier Selection -->
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white py-3">
-                <span class="fw-bold text-dark"><i class="bi bi-buildings text-primary me-2"></i> Pemasok / Supplier</span>
+                <span class="fw-bold text-dark"><i class="bi bi-buildings text-primary me-2"></i> Pemasok /
+                    Supplier</span>
             </div>
             <div class="card-body">
                 <div class="mb-3">
-                    <label for="supplierSelect" class="form-label small fw-semibold text-secondary">Pilih Supplier</label>
+                    <label for="supplierSelect" class="form-label small fw-semibold text-secondary">Pilih
+                        Supplier</label>
                     <select class="form-select" id="supplierSelect">
                         <option value="">-- Pilih Supplier --</option>
                         <?php foreach ($supplier as $sup): ?>
@@ -64,7 +70,8 @@
                     </select>
                 </div>
                 <div class="mb-0">
-                    <label for="noReferensi" class="form-label small fw-semibold text-secondary">No. Referensi (Invoice Supplier)</label>
+                    <label for="noReferensi" class="form-label small fw-semibold text-secondary">No. Referensi (Invoice
+                        Supplier)</label>
                     <input type="text" class="form-control" id="noReferensi" value="<?= $no_referensi; ?>">
                 </div>
             </div>
@@ -77,16 +84,15 @@
             </div>
             <div class="card-body">
                 <div class="mb-3">
-                    <label for="purchaseProductSelect" class="form-label small fw-semibold text-secondary">Produk</label>
+                    <label for="purchaseProductSelect"
+                        class="form-label small fw-semibold text-secondary">Produk</label>
                     <select class="form-select" id="purchaseProductSelect">
                         <option value="">-- Pilih produk --</option>
                         <?php foreach ($produk as $prd): ?>
-                            <option value="<?= $prd->id_produk; ?>" 
-                                    data-code="<?= html_escape($prd->kode_produk); ?>"
-                                    data-name="<?= html_escape($prd->nama_produk); ?>" 
-                                    data-sell-price="<?= $prd->harga_jual; ?>"
-                                    data-stock="<?= $prd->stok; ?>">
-                                <?= html_escape($prd->kode_produk); ?> - <?= html_escape($prd->nama_produk); ?> 
+                            <option value="<?= $prd->id_produk; ?>" data-code="<?= html_escape($prd->kode_produk); ?>"
+                                data-name="<?= html_escape($prd->nama_produk); ?>"
+                                data-sell-price="<?= $prd->harga_jual; ?>" data-stock="<?= $prd->stok; ?>">
+                                <?= html_escape($prd->kode_produk); ?> - <?= html_escape($prd->nama_produk); ?>
                                 (Stok: <?= $prd->stok; ?>)
                             </option>
                         <?php endforeach; ?>
@@ -95,11 +101,13 @@
 
                 <div class="row mb-3">
                     <div class="col-md-6 mb-2 mb-md-0">
-                        <label for="purchaseQty" class="form-label small fw-semibold text-secondary">Kuantitas Masuk</label>
+                        <label for="purchaseQty" class="form-label small fw-semibold text-secondary">Kuantitas
+                            Masuk</label>
                         <input type="number" min="1" value="1" class="form-control" id="purchaseQty">
                     </div>
                     <div class="col-md-6">
-                        <label for="purchasePrice" class="form-label small fw-semibold text-secondary">Harga Beli Satuan</label>
+                        <label for="purchasePrice" class="form-label small fw-semibold text-secondary">Harga Beli
+                            Satuan</label>
                         <div class="input-group">
                             <span class="input-group-text">Rp</span>
                             <input type="number" min="0" step="0.01" value="0" class="form-control" id="purchasePrice">
@@ -107,7 +115,8 @@
                     </div>
                 </div>
 
-                <button type="button" class="btn btn-primary w-100 py-2.5 fw-bold shadow-sm" id="addPurchaseToCart"><i class="bi bi-plus-lg"></i> Tambahkan Ke Keranjang</button>
+                <button type="button" class="btn btn-primary w-100 py-2.5 fw-bold shadow-sm" id="addPurchaseToCart"><i
+                        class="bi bi-plus-lg"></i> Tambahkan Ke Keranjang</button>
             </div>
         </div>
     </div>
@@ -117,9 +126,9 @@
     // Purchase cart arrays
     var pCart = [];
 
-    $(document).ready(function() {
+    $(document).ready(function () {
         // Auto default buy price based on selling price or 0
-        $('#purchaseProductSelect').on('change', function() {
+        $('#purchaseProductSelect').on('change', function () {
             var selected = $(this).find('option:selected');
             if (selected.val() !== "") {
                 var sellPrice = parseFloat(selected.data('sell-price'));
@@ -134,7 +143,7 @@
         });
 
         // Add Product To Purchase Cart Array
-        $('#addPurchaseToCart').on('click', function(e) {
+        $('#addPurchaseToCart').on('click', function (e) {
             e.preventDefault();
             var select = $('#purchaseProductSelect');
             var selected = select.find('option:selected');
@@ -185,7 +194,7 @@
         });
 
         // Remove row item from purchase cart
-        $(document).on('click', '.remove-purchase-item', function(e) {
+        $(document).on('click', '.remove-purchase-item', function (e) {
             e.preventDefault();
             var index = $(this).data('index');
             pCart.splice(index, 1);
@@ -193,7 +202,7 @@
         });
 
         // Quantity manual input change in cart row
-        $(document).on('change', '.p-qty-input', function() {
+        $(document).on('change', '.p-qty-input', function () {
             var index = $(this).data('index');
             var qty = parseInt($(this).val());
             var item = pCart[index];
@@ -209,7 +218,7 @@
         });
 
         // Buying price manual input change in cart row
-        $(document).on('change', '.p-price-input', function() {
+        $(document).on('change', '.p-price-input', function () {
             var index = $(this).data('index');
             var price = parseFloat($(this).val());
             var item = pCart[index];
@@ -225,7 +234,7 @@
         });
 
         // Reset Purchase Cart
-        $('#clearPurchaseCart').on('click', function() {
+        $('#clearPurchaseCart').on('click', function () {
             if (pCart.length > 0) {
                 Swal.fire({
                     title: 'Kosongkan Keranjang?',
@@ -244,7 +253,7 @@
         });
 
         // Submit Purchase to Server via AJAX POST Request
-        $('#btnSubmitPurchase').on('click', function(e) {
+        $('#btnSubmitPurchase').on('click', function (e) {
             e.preventDefault();
             var supplierId = $('#supplierSelect').val();
             var refNo = $('#noReferensi').val().trim();
@@ -286,7 +295,7 @@
                             total_harga: grandTotal,
                             items: pCart
                         },
-                        success: function(response) {
+                        success: function (response) {
                             if (response.status === 'success') {
                                 Swal.fire({
                                     title: 'Transaksi Disimpan!',
@@ -300,7 +309,7 @@
                                 Swal.fire('Gagal Menyimpan', response.message, 'error');
                             }
                         },
-                        error: function() {
+                        error: function () {
                             Swal.fire('Fatal Error', 'Terjadi kegagalan komunikasi server.', 'error');
                         }
                     });
@@ -328,7 +337,7 @@
             return;
         }
 
-        $.each(pCart, function(index, item) {
+        $.each(pCart, function (index, item) {
             var row = '<tr>' +
                 '<td>' +
                 '<strong class="text-dark d-block">' + htmlEscape(item.nama_produk) + '</strong>' +
@@ -362,7 +371,7 @@
      */
     function calculatePurchaseGrandTotal() {
         var total = 0;
-        $.each(pCart, function(index, item) {
+        $.each(pCart, function (index, item) {
             total += item.subtotal;
         });
         return total;

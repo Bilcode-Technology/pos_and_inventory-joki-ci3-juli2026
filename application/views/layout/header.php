@@ -20,6 +20,9 @@
     <!-- SweetAlert2 CSS via CDN -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bootstrap-4@5/bootstrap-4.min.css">
 
+    <!-- jQuery 3.7.1 CDN -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
     <!-- Custom Theme Styling -->
     <style>
         :root {
@@ -176,4 +179,4 @@
     </style>
 </head>
 <body>
-<div id="wrapper">
+<div id="<?= (isset($is_auth) && $is_auth) ? 'auth-wrapper' : 'wrapper'; ?>">

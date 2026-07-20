@@ -184,8 +184,8 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- Admin -> username: admin, password: admin123 (bcrypt hash)
 -- Owner -> username: owner, password: owner123 (bcrypt hash)
 INSERT INTO `users` (`id_user`, `username`, `password`, `nama_user`, `role`, `created_at`) VALUES
-(1, 'admin', '$2y$10$4rMbp8KzIZv5iRk4D2E5EOZp3V5qGg.8/0vHnNfN6oYt7qK6k8o0u', 'Administrator System', 'admin', NOW()),
-(2, 'owner', '$2y$10$p0bH3/K9D4d8F6G2h1J5E.Xl2M4nOo/9a2bC3dE4fG5hI6jK7l8m', 'Owner Toko', 'owner', NOW());
+(1, 'admin', '$2y$10$/u3EqncFVRC/Hggdw7i6jOp.mGBg5bwsW3wx.hG9tZ9pnjojNjU46', 'Administrator System', 'admin', NOW()),
+(2, 'owner', '$2y$10$2dxVrdXDYkxG5bsdPGJuC.tNK2Usn5pd0OV2z9qAhmH7eBIyN5UOO', 'Owner Toko', 'owner', NOW());
 
 -- Note: In PHP, password_verify('admin123', $hash) will verify against the generated bcrypt hash above.
 -- If you create users from the Register UI or CRUD later, they will automatically use password_hash().
