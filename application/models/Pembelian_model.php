@@ -33,21 +33,24 @@ class Pembelian_model extends CI_Model {
             );
             $this->db->insert('detail_pembelian', $detail_row);
 
-            // 2. Update produk table to increase stock atomically (`stok = stok + kuantitas`)
-            $this->db->set('stok', 'stok + ' . (int)$item['kuantitas'], FALSE);
-            $this->db->where('id_produk', $item['id_produk']);
-            $this->db->update('produk');
+            $status = isset($data_pembelian['status']) ? $data_pembelian['status'] : 'pending';
+            if ($status === 'selesai') {
+                // 2. Update produk table to increase stock atomically (`stok = stok + kuantitas`)
+                $this->db->set('stok', 'stok + ' . (int)$item['kuantitas'], FALSE);
+                $this->db->where('id_produk', $item['id_produk']);
+                $this->db->update('produk');
 
-            // 3. Insert record into riwayat_stok table
-            $riwayat_row = array(
-                'id_produk'        => $item['id_produk'],
-                'jenis_pergerakan' => 'masuk',
-                'kuantitas'        => (int)$item['kuantitas'],
-                'referensi_id'     => $id_pembelian,
-                'tanggal'          => isset($data_pembelian['tanggal_pembelian']) ? $data_pembelian['tanggal_pembelian'] : date('Y-m-d H:i:s'),
-                'keterangan'       => 'Pembelian Ref: ' . $data_pembelian['no_referensi']
-            );
-            $this->db->insert('riwayat_stok', $riwayat_row);
+                // 3. Insert record into riwayat_stok table
+                $riwayat_row = array(
+                    'id_produk'        => $item['id_produk'],
+                    'jenis_pergerakan' => 'masuk',
+                    'kuantitas'        => (int)$item['kuantitas'],
+                    'referensi_id'     => $id_pembelian,
+                    'tanggal'          => isset($data_pembelian['tanggal_pembelian']) ? $data_pembelian['tanggal_pembelian'] : date('Y-m-d H:i:s'),
+                    'keterangan'       => 'Pembelian Ref: ' . $data_pembelian['no_referensi']
+                );
+                $this->db->insert('riwayat_stok', $riwayat_row);
+            }
         }
 
         // Complete the transaction

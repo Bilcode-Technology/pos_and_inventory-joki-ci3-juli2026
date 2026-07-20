@@ -27,7 +27,7 @@ class Penjualan extends MY_Controller {
     public function pos() {
         $data['title'] = 'Kasir Point of Sales (POS)';
         $data['produk'] = $this->Produk_model->get_all();
-        $data['no_faktur'] = $this->Penjualan_model->generate_no_faktur();
+        $data['kode_transaksi'] = $this->Penjualan_model->generate_no_faktur();
         $this->render('penjualan/pos_view', $data);
     }
 
@@ -47,11 +47,21 @@ class Penjualan extends MY_Controller {
             show_404();
         }
 
-        $no_faktur = $this->input->post('no_faktur', TRUE);
+        $kode_transaksi = $this->input->post('kode_transaksi', TRUE);
         $total_harga = (float)$this->input->post('total_harga');
+        
+        // New fields
+        $id_member = $this->input->post('id_member') ? (int)$this->input->post('id_member') : NULL;
+        $nama_pembeli = $this->input->post('nama_pembeli', TRUE) ?: NULL;
+        $diskon = (float)$this->input->post('diskon');
+        $pajak = (float)$this->input->post('pajak');
+        $grand_total = (float)$this->input->post('grand_total');
+        $metode_transaksi = $this->input->post('metode_transaksi', TRUE) ?: 'tunai';
+        $status = $this->input->post('status', TRUE) ?: 'selesai';
+
         $items = $this->input->post('items'); // Array of items [{id_produk, kuantitas, harga_satuan, subtotal}]
 
-        if (empty($no_faktur) || empty($items) || !is_array($items)) {
+        if (empty($kode_transaksi) || empty($items) || !is_array($items)) {
             echo json_encode(array(
                 'status'  => 'error',
                 'message' => 'Keranjang belanja masih kosong atau data tidak valid!'
@@ -81,8 +91,15 @@ class Penjualan extends MY_Controller {
         // Format data_penjualan header
         $data_penjualan = array(
             'id_user'           => $this->session->userdata('id_user'),
-            'no_faktur'         => $no_faktur,
+            'id_member'         => $id_member,
+            'nama_pembeli'      => $nama_pembeli,
+            'kode_transaksi'         => $kode_transaksi,
             'total_harga'       => $total_harga,
+            'diskon'            => $diskon,
+            'pajak'             => $pajak,
+            'grand_total'       => $grand_total,
+            'metode_transaksi'  => $metode_transaksi,
+            'status'            => $status,
             'tanggal_penjualan' => date('Y-m-d H:i:s'),
             'created_at'        => date('Y-m-d H:i:s')
         );
@@ -91,10 +108,10 @@ class Penjualan extends MY_Controller {
         $success = $this->Penjualan_model->insert_penjualan($data_penjualan, $items);
 
         if ($success) {
-            $inserted = $this->db->get_where('penjualan', array('no_faktur' => $no_faktur))->row();
+            $inserted = $this->db->get_where('transaksi', array('kode_transaksi' => $kode_transaksi))->row();
             echo json_encode(array(
                 'status'       => 'success',
-                'message'      => 'Transaksi penjualan No. ' . $no_faktur . ' berhasil disimpan!',
+                'message'      => 'Transaksi penjualan No. ' . $kode_transaksi . ' berhasil disimpan!',
                 'id_penjualan' => $inserted ? $inserted->id_penjualan : 0
             ));
         } else {
@@ -131,7 +148,7 @@ class Penjualan extends MY_Controller {
             return;
         }
 
-        $data['title'] = 'Detail Faktur: ' . $header->no_faktur;
+        $data['title'] = 'Detail Faktur: ' . $header->kode_transaksi;
         $data['header'] = $header;
         $data['detail'] = $detail;
         $this->render('penjualan/detail_view', $data);

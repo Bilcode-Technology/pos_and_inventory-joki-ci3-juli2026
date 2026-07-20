@@ -69,10 +69,18 @@
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <div class="mb-0">
+                <div class="mb-3">
                     <label for="noReferensi" class="form-label small fw-semibold text-secondary">No. Referensi (Invoice
                         Supplier)</label>
                     <input type="text" class="form-control" id="noReferensi" value="<?= $no_referensi; ?>">
+                </div>
+                <div class="mb-0">
+                    <label for="statusPembelian" class="form-label small fw-semibold text-secondary">Status Pembelian</label>
+                    <select class="form-select" id="statusPembelian">
+                        <option value="pending">Pending (Belum Lunas/Terkirim)</option>
+                        <option value="selesai" selected>Selesai (Masuk Gudang)</option>
+                        <option value="batal">Batal</option>
+                    </select>
                 </div>
             </div>
         </div>
@@ -83,6 +91,17 @@
                 <span class="fw-bold text-dark"><i class="bi bi-search text-primary me-2"></i> Pilih Barang Masuk</span>
             </div>
             <div class="card-body">
+                <div class="mb-3">
+                    <label for="purchaseBarcodeScanner" class="form-label small fw-semibold text-secondary"><i class="bi bi-upc-scan"></i> Scan Barcode Produk</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control bg-light border-primary" id="purchaseBarcodeScanner" placeholder="Scan barcode disini (Enter)..." autocomplete="off">
+                        <button type="button" class="btn btn-primary" id="btnOpenPurchaseScanner" title="Scan dengan Kamera">
+                            <i class="bi bi-camera-video"></i> Kamera
+                        </button>
+                    </div>
+                </div>
+                <div class="mb-3 text-center text-muted small fw-semibold">- ATAU PENCARIAN MANUAL -</div>
+
                 <div class="mb-3">
                     <label for="purchaseProductSelect"
                         class="form-label small fw-semibold text-secondary">Produk</label>
@@ -126,13 +145,48 @@
     // Purchase cart arrays
     var pCart = [];
 
+    // Defined at global scope so it can be called from the camera scanner IIFE
+    function addProductToPurchaseCart(id, code, name, buyPrice, qty) {
+        id = parseInt(id);
+        qty = parseInt(qty);
+        buyPrice = parseFloat(buyPrice);
+
+        if (qty <= 0 || isNaN(qty)) {
+            Swal.fire('Jumlah Salah', 'Jumlah stok masuk minimal adalah 1.', 'warning');
+            return;
+        }
+
+        if (buyPrice < 0 || isNaN(buyPrice)) {
+            Swal.fire('Harga Salah', 'Harga beli satuan tidak boleh bernilai minus!', 'warning');
+            return;
+        }
+
+        // Check if product already exists in purchase cart
+        var existIndex = pCart.findIndex(item => item.id_produk === id);
+        if (existIndex !== -1) {
+            var newQty = pCart[existIndex].kuantitas + qty;
+            pCart[existIndex].kuantitas = newQty;
+            pCart[existIndex].harga_beli = buyPrice;
+            pCart[existIndex].subtotal = newQty * buyPrice;
+        } else {
+            pCart.push({
+                id_produk: id,
+                kode_produk: code,
+                nama_produk: name,
+                harga_beli: buyPrice,
+                kuantitas: qty,
+                subtotal: qty * buyPrice
+            });
+        }
+        renderPurchaseCart();
+    }
+
     $(document).ready(function () {
         // Auto default buy price based on selling price or 0
         $('#purchaseProductSelect').on('change', function () {
             var selected = $(this).find('option:selected');
             if (selected.val() !== "") {
                 var sellPrice = parseFloat(selected.data('sell-price'));
-                // Estimate purchase price around 80% of selling price by default
                 var estBuyPrice = Math.round(sellPrice * 0.8);
                 $('#purchasePrice').val(estBuyPrice);
                 $('#purchaseQty').val(1);
@@ -153,44 +207,48 @@
                 return;
             }
 
-            var id = parseInt(select.val());
+            var id = select.val();
             var code = selected.data('code');
             var name = selected.data('name');
-            var buyPrice = parseFloat($('#purchasePrice').val());
-            var qty = parseInt($('#purchaseQty').val());
+            var buyPrice = $('#purchasePrice').val();
+            var qty = $('#purchaseQty').val();
 
-            if (qty <= 0 || isNaN(qty)) {
-                Swal.fire('Jumlah Salah', 'Jumlah stok masuk minimal adalah 1.', 'warning');
-                return;
-            }
-
-            if (buyPrice < 0 || isNaN(buyPrice)) {
-                Swal.fire('Harga Salah', 'Harga beli satuan tidak boleh bernilai minus!', 'warning');
-                return;
-            }
-
-            // Check if product already exists in purchase cart
-            var existIndex = pCart.findIndex(item => item.id_produk === id);
-            if (existIndex !== -1) {
-                // Average the buying price or overwrite with the latest buying price
-                var newQty = pCart[existIndex].kuantitas + qty;
-                pCart[existIndex].kuantitas = newQty;
-                pCart[existIndex].harga_beli = buyPrice; // Overwrite with latest buy price
-                pCart[existIndex].subtotal = newQty * buyPrice;
-            } else {
-                pCart.push({
-                    id_produk: id,
-                    kode_produk: code,
-                    nama_produk: name,
-                    harga_beli: buyPrice,
-                    kuantitas: qty,
-                    subtotal: qty * buyPrice
-                });
-            }
+            addProductToPurchaseCart(id, code, name, buyPrice, qty);
 
             // Reset selection fields
             select.val('').trigger('change');
-            renderPurchaseCart();
+            $('#purchasePrice').val(0);
+            $('#purchaseQty').val(1);
+        });
+
+        // Handle Barcode Scanner
+        $('#purchaseBarcodeScanner').on('keypress', function (e) {
+            if (e.which == 13) { // Enter key pressed
+                e.preventDefault();
+                var barcode = $(this).val().trim();
+                if (barcode === "") return;
+
+                $.ajax({
+                    url: '<?= site_url("produk/ajax_get_barcode"); ?>',
+                    type: 'POST',
+                    dataType: 'json',
+                    data: { barcode: barcode },
+                    success: function (response) {
+                        if (response.status === 'success') {
+                            var prd = response.data;
+                            var estBuyPrice = Math.round(parseFloat(prd.harga_jual) * 0.8);
+                            addProductToPurchaseCart(prd.id_produk, prd.kode_produk, prd.nama_produk, estBuyPrice, 1);
+                            $('#purchaseBarcodeScanner').val(''); // clear input
+                        } else {
+                            Swal.fire('Tidak Ditemukan', response.message, 'warning');
+                            $('#purchaseBarcodeScanner').val(''); // clear input
+                        }
+                    },
+                    error: function () {
+                        Swal.fire('Error', 'Gagal memanggil data barcode.', 'error');
+                    }
+                });
+            }
         });
 
         // Remove row item from purchase cart
@@ -292,6 +350,7 @@
                         data: {
                             id_supplier: supplierId,
                             no_referensi: refNo,
+                            status: $('#statusPembelian').val(),
                             total_harga: grandTotal,
                             items: pCart
                         },
@@ -399,4 +458,126 @@
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;');
     }
+</script>
+
+<!-- Modal: Barcode Camera Scanner (Pembelian) -->
+<div class="modal fade" id="purchaseScannerModal" tabindex="-1" aria-labelledby="purchaseScannerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold" id="purchaseScannerModalLabel">
+                    <i class="bi bi-camera-video me-2"></i>Scan Barcode — Pembelian
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0 bg-black">
+                <div id="purchase-qr-reader" style="width:100%;"></div>
+                <div class="p-3 text-center" id="purchaseScannerStatus">
+                    <span class="text-white-50 small"><i class="bi bi-camera me-1"></i>Memuat kamera...</span>
+                </div>
+            </div>
+            <div class="modal-footer bg-dark border-0">
+                <p class="text-white-50 small mb-0 me-auto"><i class="bi bi-info-circle me-1"></i>Produk langsung ditambahkan ke keranjang saat terdeteksi</p>
+                <button type="button" class="btn btn-outline-light btn-sm" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Batal
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+(function () {
+    var pScanner = null;
+    var pIsRunning = false;
+    var pLastScanned = '';
+    var pScanCooldown = false;
+    var pModalEl = document.getElementById('purchaseScannerModal');
+
+    document.getElementById('btnOpenPurchaseScanner').addEventListener('click', function () {
+        new bootstrap.Modal(pModalEl).show();
+    });
+
+    pModalEl.addEventListener('shown.bs.modal', function () { startPurchaseScanner(); });
+    pModalEl.addEventListener('hide.bs.modal', function () { stopPurchaseScanner(); });
+
+    function startPurchaseScanner() {
+        if (pIsRunning) return;
+        pScanner = new Html5Qrcode('purchase-qr-reader');
+        var config = {
+            fps: 12,
+            qrbox: { width: 260, height: 140 },
+            aspectRatio: 1.6,
+            formatsToSupport: [
+                Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8,
+                Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39,
+                Html5QrcodeSupportedFormats.CODE_93, Html5QrcodeSupportedFormats.QR_CODE,
+                Html5QrcodeSupportedFormats.UPC_A, Html5QrcodeSupportedFormats.UPC_E,
+                Html5QrcodeSupportedFormats.ITF
+            ]
+        };
+        pScanner.start(
+            { facingMode: 'environment' },
+            config,
+            function onSuccess(decodedText) {
+                if (pScanCooldown || decodedText === pLastScanned) return;
+                pLastScanned = decodedText;
+                pScanCooldown = true;
+
+                document.getElementById('purchaseScannerStatus').innerHTML =
+                    '<span class="text-info small"><i class="bi bi-arrow-repeat me-1"></i>Mencari produk: <strong>' + decodedText + '</strong>...</span>';
+
+                $.ajax({
+                    url: '<?= site_url("produk/ajax_get_barcode"); ?>',
+                    type: 'POST',
+                    dataType: 'json',
+                    data: { barcode: decodedText },
+                    success: function (response) {
+                        if (response.status === 'success') {
+                            var prd = response.data;
+                            var estBuyPrice = Math.round(parseFloat(prd.harga_jual) * 0.8);
+                            addProductToPurchaseCart(prd.id_produk, prd.kode_produk, prd.nama_produk, estBuyPrice, 1);
+                            document.getElementById('purchaseScannerStatus').innerHTML =
+                                '<span class="text-success fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>Ditambahkan: <strong>' + prd.nama_produk + '</strong></span>';
+                        } else {
+                            document.getElementById('purchaseScannerStatus').innerHTML =
+                                '<span class="text-warning"><i class="bi bi-exclamation-triangle-fill me-1"></i>' + response.message + '</span>';
+                        }
+                        setTimeout(function () {
+                            pScanCooldown = false;
+                            pLastScanned = '';
+                            document.getElementById('purchaseScannerStatus').innerHTML =
+                                '<span class="text-white-50 small"><i class="bi bi-camera-video-fill me-1"></i>Siap scan berikutnya...</span>';
+                        }, 2000);
+                    },
+                    error: function () {
+                        document.getElementById('purchaseScannerStatus').innerHTML =
+                            '<span class="text-danger"><i class="bi bi-x-circle-fill me-1"></i>Gagal menghubungi server.</span>';
+                        setTimeout(function () { pScanCooldown = false; pLastScanned = ''; }, 2000);
+                    }
+                });
+            },
+            function onError() { }
+        ).then(function () {
+            pIsRunning = true;
+            document.getElementById('purchaseScannerStatus').innerHTML =
+                '<span class="text-white-50 small"><i class="bi bi-camera-video-fill me-1"></i>Arahkan kamera ke barcode produk...</span>';
+        }).catch(function (err) {
+            pIsRunning = false;
+            var msg = err ? err.toString() : '';
+            var info = msg.indexOf('NotAllowedError') !== -1 ? 'Izin kamera ditolak. Izinkan akses kamera di browser.' :
+                       msg.indexOf('NotFoundError') !== -1  ? 'Tidak ada kamera pada perangkat ini.' :
+                       'Kamera tidak dapat diakses.';
+            document.getElementById('purchaseScannerStatus').innerHTML =
+                '<span class="text-warning small"><i class="bi bi-exclamation-triangle-fill me-1"></i>' + info + '</span>';
+        });
+    }
+
+    function stopPurchaseScanner() {
+        if (pScanner && pIsRunning) {
+            pScanner.stop().then(function () { pScanner.clear(); pIsRunning = false; }).catch(function () { pIsRunning = false; });
+        }
+    }
+})();
 </script>

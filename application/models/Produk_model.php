@@ -46,15 +46,29 @@ class Produk_model extends CI_Model {
     }
 
     /**
-     * Get products with low stock (below or equal to threshold) for Owner Dashboard
-     * @param int $threshold Default threshold is 10
+     * Get product by barcode
+     * @param string $barcode
+     * @return object
+     */
+    public function get_by_barcode($barcode) {
+        $this->db->select('produk.*, kategori.nama_kategori');
+        $this->db->from('produk');
+        $this->db->join('kategori', 'kategori.id_kategori = produk.id_kategori', 'left');
+        $this->db->where('produk.barcode', $barcode);
+        return $this->db->get()->row();
+    }
+
+    /**
+     * Get products with low stock (below or equal to minimal_stok, or threshold) for Owner Dashboard
+     * @param int $threshold Default threshold is 10 (used if minimal_stok is 0)
      * @return array
      */
     public function get_low_stock($threshold = 10) {
         $this->db->select('produk.*, kategori.nama_kategori');
         $this->db->from('produk');
         $this->db->join('kategori', 'kategori.id_kategori = produk.id_kategori', 'left');
-        $this->db->where('produk.stok <=', $threshold);
+        // If minimal_stok is set (> 0), use it. Otherwise use the default threshold.
+        $this->db->where('( (produk.minimal_stok > 0 AND produk.stok <= produk.minimal_stok) OR (produk.minimal_stok = 0 AND produk.stok <= '.$this->db->escape($threshold).') )');
         $this->db->order_by('produk.stok', 'ASC');
         return $this->db->get()->result();
     }
@@ -67,6 +81,21 @@ class Produk_model extends CI_Model {
      */
     public function is_duplicate_code($kode_produk, $exclude_id = NULL) {
         $this->db->where('kode_produk', $kode_produk);
+        if ($exclude_id !== NULL) {
+            $this->db->where('id_produk !=', $exclude_id);
+        }
+        return ($this->db->count_all_results('produk') > 0);
+    }
+
+    /**
+     * Check if barcode already exists
+     * @param string $barcode
+     * @param int|null $exclude_id
+     * @return bool
+     */
+    public function is_duplicate_barcode($barcode, $exclude_id = NULL) {
+        if (empty($barcode)) return FALSE;
+        $this->db->where('barcode', $barcode);
         if ($exclude_id !== NULL) {
             $this->db->where('id_produk !=', $exclude_id);
         }
@@ -100,7 +129,7 @@ class Produk_model extends CI_Model {
      * @return bool
      */
     public function has_transactions($id) {
-        $sales = $this->db->get_where('detail_penjualan', array('id_produk' => $id))->num_rows();
+        $sales = $this->db->get_where('detail_transaksi', array('id_produk' => $id))->num_rows();
         $purchases = $this->db->get_where('detail_pembelian', array('id_produk' => $id))->num_rows();
         return ($sales > 0 || $purchases > 0);
     }

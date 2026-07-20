@@ -66,12 +66,18 @@ class Pembelian extends MY_Controller {
             }
         }
 
+        $status = $this->input->post('status', TRUE);
+        if (!in_array($status, ['pending', 'selesai', 'batal'])) {
+            $status = 'pending';
+        }
+
         // Format data_pembelian header
         $data_pembelian = array(
             'id_supplier'       => $id_supplier,
             'id_user'           => $this->session->userdata('id_user'),
             'no_referensi'      => $no_referensi,
             'total_harga'       => $total_harga,
+            'status'            => $status,
             'tanggal_pembelian' => date('Y-m-d H:i:s'),
             'created_at'        => date('Y-m-d H:i:s')
         );

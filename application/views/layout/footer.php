@@ -45,7 +45,7 @@
             if (options.type.toLowerCase() === 'post') {
                 if (typeof options.data === 'string' && options.data.indexOf(csrfTokenName) === -1) {
                     options.data += (options.data ? '&' : '') + csrfTokenName + '=' + encodeURIComponent(csrfTokenHash);
-                } else if (typeof options.data === 'object' && !options.data instanceof FormData) {
+                } else if (typeof options.data === 'object' && !(options.data instanceof FormData)) {
                     options.data[csrfTokenName] = csrfTokenHash;
                 } else if (options.data instanceof FormData) {
                     if (!options.data.has(csrfTokenName)) {

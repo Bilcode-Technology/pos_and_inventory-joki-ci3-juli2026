@@ -24,7 +24,7 @@ CREATE TABLE `users` (
   `username` varchar(50) NOT NULL,
   `password` varchar(255) NOT NULL COMMENT 'Bcrypt hashed password using password_hash()',
   `nama_user` varchar(100) NOT NULL,
-  `role` enum('admin','owner') NOT NULL DEFAULT 'admin',
+  `role` enum('admin','owner','kasir') NOT NULL DEFAULT 'admin',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id_user`),
   UNIQUE KEY `idx_users_username` (`username`)
@@ -50,10 +50,16 @@ CREATE TABLE `produk` (
   `kode_produk` varchar(50) NOT NULL,
   `nama_produk` varchar(150) NOT NULL,
   `harga_jual` decimal(15,2) NOT NULL DEFAULT '0.00',
+  `minimal_stok` int(11) NOT NULL DEFAULT '0',
   `stok` int(11) NOT NULL DEFAULT '0',
+  `satuan` varchar(50) DEFAULT NULL,
+  `barcode` varchar(100) DEFAULT NULL,
+  `gambar` varchar(255) DEFAULT NULL,
+  `status` enum('aktif','nonaktif') NOT NULL DEFAULT 'aktif',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id_produk`),
   UNIQUE KEY `idx_produk_kode` (`kode_produk`),
+  UNIQUE KEY `idx_produk_barcode` (`barcode`),
   KEY `idx_produk_kategori` (`id_kategori`),
   CONSTRAINT `fk_produk_kategori` FOREIGN KEY (`id_kategori`) REFERENCES `kategori` (`id_kategori`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Products inventory catalog and live stock count';
@@ -85,6 +91,7 @@ CREATE TABLE `pembelian` (
   `no_referensi` varchar(50) NOT NULL,
   `total_harga` decimal(15,2) NOT NULL DEFAULT '0.00',
   `tanggal_pembelian` datetime NOT NULL,
+  `status` enum('pending','selesai','batal') NOT NULL DEFAULT 'pending',
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id_pembelian`),
   UNIQUE KEY `idx_pembelian_noref` (`no_referensi`),
@@ -116,37 +123,47 @@ CREATE TABLE `detail_pembelian` (
 -- 3. TRANSACTION / SALES TABLES (Penjualan / POS)
 -- ---------------------------------------------------------------------------------
 
--- Table: penjualan
+-- Table: transaksi
 -- Header for sales transactions (invoices)
-DROP TABLE IF EXISTS `penjualan`;
-CREATE TABLE `penjualan` (
+DROP TABLE IF EXISTS `transaksi`;
+CREATE TABLE `transaksi` (
   `id_penjualan` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
   `id_user` int(11) UNSIGNED NOT NULL,
-  `no_faktur` varchar(50) NOT NULL,
+  `id_member` int(11) UNSIGNED DEFAULT NULL,
+  `nama_pembeli` varchar(150) DEFAULT NULL,
+  `kode_transaksi` varchar(50) NOT NULL,
   `total_harga` decimal(15,2) NOT NULL DEFAULT '0.00',
+  `diskon` decimal(15,2) NOT NULL DEFAULT '0.00',
+  `pajak` decimal(15,2) NOT NULL DEFAULT '0.00',
+  `grand_total` decimal(15,2) NOT NULL DEFAULT '0.00',
+  `metode_transaksi` enum('tunai','qris','transfer') NOT NULL DEFAULT 'tunai',
+  `status` enum('selesai','batal') NOT NULL DEFAULT 'selesai',
   `tanggal_penjualan` datetime NOT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id_penjualan`),
-  UNIQUE KEY `idx_penjualan_faktur` (`no_faktur`),
+  UNIQUE KEY `idx_penjualan_faktur` (`kode_transaksi`),
   KEY `idx_penjualan_user` (`id_user`),
   KEY `idx_penjualan_tanggal` (`tanggal_penjualan`),
   CONSTRAINT `fk_penjualan_user` FOREIGN KEY (`id_user`) REFERENCES `users` (`id_user`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Sales invoice headers (POS transactions)';
 
--- Table: detail_penjualan
+-- Table: detail_transaksi
 -- Line items for sales transactions
-DROP TABLE IF EXISTS `detail_penjualan`;
-CREATE TABLE `detail_penjualan` (
+DROP TABLE IF EXISTS `detail_transaksi`;
+CREATE TABLE `detail_transaksi` (
   `id_detail` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
   `id_penjualan` int(11) UNSIGNED NOT NULL,
+  `tipe_item` enum('produk','paket') NOT NULL DEFAULT 'produk',
+  `id_paket` int(11) UNSIGNED DEFAULT NULL,
   `id_produk` int(11) UNSIGNED NOT NULL,
   `kuantitas` int(11) NOT NULL DEFAULT '1',
   `harga_satuan` decimal(15,2) NOT NULL DEFAULT '0.00',
+  `diskon_item` decimal(15,2) NOT NULL DEFAULT '0.00',
   `subtotal` decimal(15,2) NOT NULL DEFAULT '0.00',
   PRIMARY KEY (`id_detail`),
   KEY `idx_dpenjualan_header` (`id_penjualan`),
   KEY `idx_dpenjualan_produk` (`id_produk`),
-  CONSTRAINT `fk_dpenjualan_header` FOREIGN KEY (`id_penjualan`) REFERENCES `penjualan` (`id_penjualan`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_dpenjualan_header` FOREIGN KEY (`id_penjualan`) REFERENCES `transaksi` (`id_penjualan`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `fk_dpenjualan_produk` FOREIGN KEY (`id_produk`) REFERENCES `produk` (`id_produk`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Sales invoice line items';
 

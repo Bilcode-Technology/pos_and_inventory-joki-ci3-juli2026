@@ -3,14 +3,14 @@
     <div class="col-md-10 col-lg-8">
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-                <h5 class="mb-0 fw-bold"><i class="bi bi-file-earmark-text text-primary me-2"></i> Detail Penjualan: <?= html_escape($header->no_faktur); ?></h5>
+                <h5 class="mb-0 fw-bold"><i class="bi bi-file-earmark-text text-primary me-2"></i> Detail Penjualan: <?= html_escape($header->kode_transaksi); ?></h5>
                 <a href="<?= site_url('penjualan'); ?>" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> Kembali</a>
             </div>
             <div class="card-body p-4">
                 <div class="row mb-4 pb-3 border-bottom">
                     <div class="col-sm-6 mb-3 mb-sm-0">
                         <span class="text-muted small d-block">Nomor Faktur</span>
-                        <h3 class="fw-bold text-primary mb-0"><?= html_escape($header->no_faktur); ?></h3>
+                        <h3 class="fw-bold text-primary mb-0"><?= html_escape($header->kode_transaksi); ?></h3>
                     </div>
                     <div class="col-sm-6 text-sm-end">
                         <span class="text-muted small d-block">Tanggal Transaksi</span>

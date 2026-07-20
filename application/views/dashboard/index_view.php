@@ -177,7 +177,7 @@
                             <?php else: ?>
                                 <?php foreach ($recent_sales as $sale): ?>
                                     <tr>
-                                        <td><strong class="text-primary"><?= html_escape($sale->no_faktur); ?></strong></td>
+                                        <td><strong class="text-primary"><?= html_escape($sale->kode_transaksi); ?></strong></td>
                                         <td class="small"><?= date('d/m/Y H:i', strtotime($sale->tanggal_penjualan)); ?></td>
                                         <td><?= html_escape($sale->nama_user); ?></td>
                                         <td class="fw-bold"><?= number_to_currency($sale->total_harga, 'IDR', 'id_ID'); ?></td>

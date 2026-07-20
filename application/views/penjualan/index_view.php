@@ -27,7 +27,7 @@
                             <tr>
                                 <td class="text-center text-muted"><?= $no++; ?></td>
                                 <td class="small"><?= date('d/m/Y H:i:s', strtotime($row->tanggal_penjualan)); ?></td>
-                                <td><strong class="text-primary"><?= html_escape($row->no_faktur); ?></strong></td>
+                                <td><strong class="text-primary"><?= html_escape($row->kode_transaksi); ?></strong></td>
                                 <td><?= html_escape($row->nama_user); ?> <span class="text-muted small">(<?= html_escape($row->username); ?>)</span></td>
                                 <td class="text-end fw-bold"><?= number_to_currency($row->total_harga, 'IDR', 'id_ID'); ?></td>
                                 <td class="text-center">
@@ -116,7 +116,7 @@
             success: function(response) {
                 if (response.status === 'success') {
                     // Populate modal headers
-                    $('#modalFaktur').text(response.header.no_faktur);
+                    $('#modalFaktur').text(response.header.kode_transaksi);
                     $('#modalTanggal').text(response.header.tanggal_penjualan);
                     $('#modalKasir').text(response.header.nama_user + ' (' + response.header.username + ')');
                     

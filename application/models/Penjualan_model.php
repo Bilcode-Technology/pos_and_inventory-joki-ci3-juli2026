@@ -9,7 +9,7 @@ class Penjualan_model extends CI_Model {
 
     /**
      * Atomic Database Transaction to Record POS Sale, Line Items, Stock Deduction, and Audit Log
-     * @param array $data_penjualan Header data (id_user, no_faktur, total_harga, tanggal_penjualan)
+     * @param array $data_penjualan Header data (id_user, kode_transaksi, total_harga, tanggal_penjualan)
      * @param array $data_detail Array of line items (id_produk, kuantitas, harga_satuan, subtotal)
      * @return bool Transaction status (TRUE on success, FALSE on rollback)
      */
@@ -17,37 +17,43 @@ class Penjualan_model extends CI_Model {
         // Start Atomic Database Transaction
         $this->db->trans_start();
 
-        // Step A: Insert into penjualan header table and get the inserted ID
-        $this->db->insert('penjualan', $data_penjualan);
+        // Step A: Insert into transaksi header table and get the inserted ID
+        $this->db->insert('transaksi', $data_penjualan);
         $id_penjualan = $this->db->insert_id();
 
         // Step B: Loop through detail items
         foreach ($data_detail as $item) {
-            // 1. Insert into detail_penjualan table
+            // 1. Insert into detail_transaksi table
             $detail_row = array(
                 'id_penjualan' => $id_penjualan,
                 'id_produk'    => $item['id_produk'],
+                'tipe_item'    => isset($item['tipe_item']) ? $item['tipe_item'] : 'produk',
+                'id_paket'     => isset($item['id_paket']) ? $item['id_paket'] : NULL,
                 'kuantitas'    => (int)$item['kuantitas'],
                 'harga_satuan' => (float)$item['harga_satuan'],
+                'diskon_item'  => isset($item['diskon_item']) ? (float)$item['diskon_item'] : 0,
                 'subtotal'     => (float)$item['subtotal']
             );
-            $this->db->insert('detail_penjualan', $detail_row);
+            $this->db->insert('detail_transaksi', $detail_row);
 
-            // 2. Update produk table to decrease stock atomically (`stok = stok - kuantitas`)
-            $this->db->set('stok', 'stok - ' . (int)$item['kuantitas'], FALSE);
-            $this->db->where('id_produk', $item['id_produk']);
-            $this->db->update('produk');
+            $status = isset($data_penjualan['status']) ? $data_penjualan['status'] : 'selesai';
+            if ($status === 'selesai') {
+                // 2. Update produk table to decrease stock atomically (`stok = stok - kuantitas`)
+                $this->db->set('stok', 'stok - ' . (int)$item['kuantitas'], FALSE);
+                $this->db->where('id_produk', $item['id_produk']);
+                $this->db->update('produk');
 
-            // 3. Insert record into riwayat_stok table
-            $riwayat_row = array(
-                'id_produk'        => $item['id_produk'],
-                'jenis_pergerakan' => 'keluar',
-                'kuantitas'        => (int)$item['kuantitas'],
-                'referensi_id'     => $id_penjualan,
-                'tanggal'          => isset($data_penjualan['tanggal_penjualan']) ? $data_penjualan['tanggal_penjualan'] : date('Y-m-d H:i:s'),
-                'keterangan'       => 'Penjualan No Faktur: ' . $data_penjualan['no_faktur']
-            );
-            $this->db->insert('riwayat_stok', $riwayat_row);
+                // 3. Insert record into riwayat_stok table
+                $riwayat_row = array(
+                    'id_produk'        => $item['id_produk'],
+                    'jenis_pergerakan' => 'keluar',
+                    'kuantitas'        => (int)$item['kuantitas'],
+                    'referensi_id'     => $id_penjualan,
+                    'tanggal'          => isset($data_penjualan['tanggal_penjualan']) ? $data_penjualan['tanggal_penjualan'] : date('Y-m-d H:i:s'),
+                    'keterangan'       => 'Penjualan No Faktur: ' . $data_penjualan['kode_transaksi']
+                );
+                $this->db->insert('riwayat_stok', $riwayat_row);
+            }
         }
 
         // Complete the transaction
@@ -62,11 +68,11 @@ class Penjualan_model extends CI_Model {
      * @return array
      */
     public function get_all() {
-        $this->db->select('penjualan.*, users.nama_user, users.username');
-        $this->db->from('penjualan');
-        $this->db->join('users', 'users.id_user = penjualan.id_user', 'left');
-        $this->db->order_by('penjualan.tanggal_penjualan', 'DESC');
-        $this->db->order_by('penjualan.id_penjualan', 'DESC');
+        $this->db->select('transaksi.*, users.nama_user, users.username');
+        $this->db->from('transaksi');
+        $this->db->join('users', 'users.id_user = transaksi.id_user', 'left');
+        $this->db->order_by('transaksi.tanggal_penjualan', 'DESC');
+        $this->db->order_by('transaksi.id_penjualan', 'DESC');
         return $this->db->get()->result();
     }
 
@@ -76,10 +82,10 @@ class Penjualan_model extends CI_Model {
      * @return object
      */
     public function get_header_by_id($id_penjualan) {
-        $this->db->select('penjualan.*, users.nama_user, users.username');
-        $this->db->from('penjualan');
-        $this->db->join('users', 'users.id_user = penjualan.id_user', 'left');
-        $this->db->where('penjualan.id_penjualan', $id_penjualan);
+        $this->db->select('transaksi.*, users.nama_user, users.username');
+        $this->db->from('transaksi');
+        $this->db->join('users', 'users.id_user = transaksi.id_user', 'left');
+        $this->db->where('transaksi.id_penjualan', $id_penjualan);
         return $this->db->get()->row();
     }
 
@@ -89,10 +95,10 @@ class Penjualan_model extends CI_Model {
      * @return array
      */
     public function get_detail_by_id($id_penjualan) {
-        $this->db->select('detail_penjualan.*, produk.kode_produk, produk.nama_produk');
-        $this->db->from('detail_penjualan');
-        $this->db->join('produk', 'produk.id_produk = detail_penjualan.id_produk', 'left');
-        $this->db->where('detail_penjualan.id_penjualan', $id_penjualan);
+        $this->db->select('detail_transaksi.*, produk.kode_produk, produk.nama_produk');
+        $this->db->from('detail_transaksi');
+        $this->db->join('produk', 'produk.id_produk = detail_transaksi.id_produk', 'left');
+        $this->db->where('detail_transaksi.id_penjualan', $id_penjualan);
         return $this->db->get()->result();
     }
 
@@ -102,13 +108,13 @@ class Penjualan_model extends CI_Model {
      */
     public function generate_no_faktur() {
         $prefix = 'INV-' . date('Ymd') . '-';
-        $this->db->like('no_faktur', $prefix, 'after');
+        $this->db->like('kode_transaksi', $prefix, 'after');
         $this->db->order_by('id_penjualan', 'DESC');
         $this->db->limit(1);
-        $last = $this->db->get('penjualan')->row();
+        $last = $this->db->get('transaksi')->row();
 
         if ($last) {
-            $last_num = (int) substr($last->no_faktur, -4);
+            $last_num = (int) substr($last->kode_transaksi, -4);
             $next_num = str_pad($last_num + 1, 4, '0', STR_PAD_LEFT);
         } else {
             $next_num = '0001';
@@ -121,10 +127,10 @@ class Penjualan_model extends CI_Model {
      * @return float
      */
     public function get_total_penjualan_bulan_ini() {
-        $this->db->select_sum('total_harga');
+        $this->db->select_sum('grand_total');
         $this->db->where('MONTH(tanggal_penjualan)', date('m'));
         $this->db->where('YEAR(tanggal_penjualan)', date('Y'));
-        $row = $this->db->get('penjualan')->row();
-        return ($row && $row->total_harga) ? (float)$row->total_harga : 0.00;
+        $row = $this->db->get('transaksi')->row();
+        return ($row && $row->grand_total) ? (float)$row->grand_total : 0.00;
     }
 }

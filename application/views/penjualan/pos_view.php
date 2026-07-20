@@ -5,7 +5,7 @@
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
                 <span class="fw-bold text-dark fs-5"><i class="bi bi-cart3 text-primary me-2"></i> Keranjang Kasir</span>
-                <span class="badge bg-secondary-subtle text-secondary border">Faktur: <strong><?= $no_faktur; ?></strong></span>
+                <span class="badge bg-secondary-subtle text-secondary border">Faktur: <strong><?= $kode_transaksi; ?></strong></span>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive" style="min-height: 350px;">
@@ -28,6 +28,33 @@
                             </tr>
                         </tbody>
                     </table>
+                </div>
+                <!-- Cart Options -->
+                <div class="p-3 border-top bg-white">
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label small fw-semibold">Nama Pembeli (Opsional)</label>
+                            <input type="text" class="form-control form-control-sm" id="namaPembeli" placeholder="Umum">
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label small fw-semibold">Metode Pembayaran</label>
+                            <select class="form-select form-select-sm" id="metodeTransaksi">
+                                <option value="tunai">Tunai</option>
+                                <option value="transfer">Transfer Bank</option>
+                                <option value="qris">QRIS / E-Wallet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label small fw-semibold">Diskon (Rp)</label>
+                            <input type="number" class="form-control form-control-sm" id="diskonPos" value="0" min="0">
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label small fw-semibold">Pajak (Rp)</label>
+                            <input type="number" class="form-control form-control-sm" id="pajakPos" value="0" min="0">
+                        </div>
+                    </div>
                 </div>
                 <!-- Grand Total Footer -->
                 <div class="bg-light p-4 border-top">
@@ -53,6 +80,17 @@
                 <span class="fw-bold text-dark"><i class="bi bi-search text-primary me-2"></i> Cari & Tambah Produk</span>
             </div>
             <div class="card-body">
+                <div class="mb-3">
+                    <label for="posBarcodeScanner" class="form-label small fw-semibold text-secondary"><i class="bi bi-upc-scan"></i> Scan Barcode Produk</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control bg-light border-primary" id="posBarcodeScanner" placeholder="Scan barcode disini (Enter)..." autocomplete="off">
+                        <button type="button" class="btn btn-primary" id="btnOpenPosScanner" title="Scan dengan Kamera">
+                            <i class="bi bi-camera-video"></i> Kamera
+                        </button>
+                    </div>
+                </div>
+                <div class="mb-3 text-center text-muted small fw-semibold">- ATAU PENCARIAN MANUAL -</div>
+
                 <div class="mb-3">
                     <label for="productSelect" class="form-label small fw-semibold text-secondary">Pilih Produk</label>
                     <select class="form-select" id="productSelect">
@@ -91,7 +129,49 @@
 <script>
     // Cart JSON array structure holding added line items
     var cart = [];
-    var noFaktur = '<?= $no_faktur; ?>';
+    var noFaktur = '<?= $kode_transaksi; ?>';
+
+    // Defined at global scope so it can be called from the camera scanner IIFE
+    function addProductToCart(id, code, name, price, stock, qty) {
+        id = parseInt(id);
+        qty = parseInt(qty);
+        price = parseFloat(price);
+        stock = parseInt(stock);
+
+        if (qty <= 0 || isNaN(qty)) {
+            Swal.fire('Jumlah Tidak Valid', 'Jumlah minimal pembelian adalah 1.', 'warning');
+            return;
+        }
+
+        if (qty > stock) {
+            Swal.fire('Stok Kurang', 'Jumlah diminta melebihi stok yang tersedia!', 'error');
+            return;
+        }
+
+        // Check if product already exists in cart array
+        var existIndex = cart.findIndex(item => item.id_produk === id);
+        if (existIndex !== -1) {
+            var newQty = cart[existIndex].kuantitas + qty;
+            if (newQty > stock) {
+                Swal.fire('Stok Kurang', 'Gagal update keranjang! Jumlah total (' + newQty + ') melebihi stok (' + stock + ').', 'error');
+                return;
+            }
+            cart[existIndex].kuantitas = newQty;
+            cart[existIndex].subtotal = newQty * price;
+        } else {
+            // Insert new row into cart array
+            cart.push({
+                id_produk: id,
+                kode_produk: code,
+                nama_produk: name,
+                harga_satuan: price,
+                kuantitas: qty,
+                subtotal: qty * price,
+                max_stock: stock
+            });
+        }
+        renderCartTable();
+    }
 
     $(document).ready(function() {
         // Dropdown selection updates stock display
@@ -118,49 +198,52 @@
                 return;
             }
 
-            var id = parseInt(select.val());
+            var id = select.val();
             var code = selected.data('code');
             var name = selected.data('name');
-            var price = parseFloat(selected.data('price'));
-            var stock = parseInt(selected.data('stock'));
-            var qty = parseInt($('#productQty').val());
+            var price = selected.data('price');
+            var stock = selected.data('stock');
+            var qty = $('#productQty').val();
 
-            if (qty <= 0 || isNaN(qty)) {
-                Swal.fire('Jumlah Tidak Valid', 'Jumlah minimal pembelian adalah 1.', 'warning');
-                return;
-            }
-
-            if (qty > stock) {
-                Swal.fire('Stok Kurang', 'Jumlah diminta melebihi stok yang tersedia!', 'error');
-                return;
-            }
-
-            // Check if product already exists in cart array
-            var existIndex = cart.findIndex(item => item.id_produk === id);
-            if (existIndex !== -1) {
-                var newQty = cart[existIndex].kuantitas + qty;
-                if (newQty > stock) {
-                    Swal.fire('Stok Kurang', 'Gagal update keranjang! Jumlah total (' + newQty + ') melebihi stok (' + stock + ').', 'error');
-                    return;
-                }
-                cart[existIndex].kuantitas = newQty;
-                cart[existIndex].subtotal = newQty * price;
-            } else {
-                // Insert new row into cart array
-                cart.push({
-                    id_produk: id,
-                    kode_produk: code,
-                    nama_produk: name,
-                    harga_satuan: price,
-                    kuantitas: qty,
-                    subtotal: qty * price,
-                    max_stock: stock
-                });
-            }
+            addProductToCart(id, code, name, price, stock, qty);
 
             // Reset selection fields
             select.val('').trigger('change');
-            renderCartTable();
+            $('#productQty').val(1);
+            $('#productStockDisplay').val(0);
+        });
+
+        // Handle Barcode Scanner
+        $('#posBarcodeScanner').on('keypress', function (e) {
+            if (e.which == 13) { // Enter key pressed
+                e.preventDefault();
+                var barcode = $(this).val().trim();
+                if (barcode === "") return;
+
+                $.ajax({
+                    url: '<?= site_url("produk/ajax_get_barcode"); ?>',
+                    type: 'POST',
+                    dataType: 'json',
+                    data: { barcode: barcode },
+                    success: function (response) {
+                        if (response.status === 'success') {
+                            var prd = response.data;
+                            if (parseInt(prd.stok) <= 0) {
+                                Swal.fire('Stok Kosong', 'Stok produk "' + prd.nama_produk + '" habis!', 'error');
+                            } else {
+                                addProductToCart(prd.id_produk, prd.kode_produk, prd.nama_produk, prd.harga_jual, prd.stok, 1);
+                            }
+                            $('#posBarcodeScanner').val(''); // clear input
+                        } else {
+                            Swal.fire('Tidak Ditemukan', response.message, 'warning');
+                            $('#posBarcodeScanner').val(''); // clear input
+                        }
+                    },
+                    error: function () {
+                        Swal.fire('Error', 'Gagal memanggil data barcode.', 'error');
+                    }
+                });
+            }
         });
 
         // Delete Row Item from Cart
@@ -237,8 +320,14 @@
                         type: 'POST',
                         dataType: 'json',
                         data: {
-                            no_faktur: noFaktur,
-                            total_harga: grandTotal,
+                            kode_transaksi: noFaktur,
+                            total_harga: calculateSubTotal(),
+                            grand_total: grandTotal,
+                            diskon: parseFloat($('#diskonPos').val()) || 0,
+                            pajak: parseFloat($('#pajakPos').val()) || 0,
+                            nama_pembeli: $('#namaPembeli').val(),
+                            metode_transaksi: $('#metodeTransaksi').val(),
+                            status: 'selesai',
                             items: cart
                         },
                         success: function(response) {
@@ -312,13 +401,26 @@
     /**
      * Compute sum of item subtotals in cart
      */
-    function calculateGrandTotal() {
+    function calculateSubTotal() {
         var total = 0;
         $.each(cart, function(index, item) {
             total += item.subtotal;
         });
         return total;
     }
+
+    function calculateGrandTotal() {
+        var sub = calculateSubTotal();
+        var diskon = parseFloat($('#diskonPos').val()) || 0;
+        var pajak = parseFloat($('#pajakPos').val()) || 0;
+        return sub - diskon + pajak;
+    }
+
+    // Attach listener to diskon and pajak inputs to rerender grand total
+    $('#diskonPos, #pajakPos').on('input change', function() {
+        var gt = calculateGrandTotal();
+        $('#grandTotalDisplay').text(formatRupiah(gt));
+    });
 
     /**
      * Formatting helper for Indonesian currency IDR
@@ -342,4 +444,130 @@
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;');
     }
+</script>
+
+<!-- Modal: Barcode Camera Scanner (POS Kasir) -->
+<div class="modal fade" id="posScannerModal" tabindex="-1" aria-labelledby="posScannerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title fw-bold" id="posScannerModalLabel">
+                    <i class="bi bi-camera-video me-2"></i>Scan Barcode — Kasir POS
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0 bg-black">
+                <div id="pos-qr-reader" style="width:100%;"></div>
+                <div class="p-3 text-center" id="posScannerStatus">
+                    <span class="text-white-50 small"><i class="bi bi-camera me-1"></i>Memuat kamera...</span>
+                </div>
+            </div>
+            <div class="modal-footer bg-dark border-0">
+                <p class="text-white-50 small mb-0 me-auto"><i class="bi bi-info-circle me-1"></i>Produk langsung masuk keranjang saat barcode terdeteksi</p>
+                <button type="button" class="btn btn-outline-light btn-sm" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Tutup Scanner
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+(function () {
+    var posScanner = null;
+    var posIsRunning = false;
+    var posLastScanned = '';
+    var posScanCooldown = false;
+    var posModalEl = document.getElementById('posScannerModal');
+
+    document.getElementById('btnOpenPosScanner').addEventListener('click', function () {
+        new bootstrap.Modal(posModalEl).show();
+    });
+
+    posModalEl.addEventListener('shown.bs.modal', function () { startPosScanner(); });
+    posModalEl.addEventListener('hide.bs.modal', function () { stopPosScanner(); });
+
+    function startPosScanner() {
+        if (posIsRunning) return;
+        posScanner = new Html5Qrcode('pos-qr-reader');
+        var config = {
+            fps: 12,
+            qrbox: { width: 260, height: 140 },
+            aspectRatio: 1.6,
+            formatsToSupport: [
+                Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8,
+                Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39,
+                Html5QrcodeSupportedFormats.CODE_93, Html5QrcodeSupportedFormats.QR_CODE,
+                Html5QrcodeSupportedFormats.UPC_A, Html5QrcodeSupportedFormats.UPC_E,
+                Html5QrcodeSupportedFormats.ITF
+            ]
+        };
+        posScanner.start(
+            { facingMode: 'environment' },
+            config,
+            function onSuccess(decodedText) {
+                if (posScanCooldown || decodedText === posLastScanned) return;
+                posLastScanned = decodedText;
+                posScanCooldown = true;
+
+                document.getElementById('posScannerStatus').innerHTML =
+                    '<span class="text-info small"><i class="bi bi-arrow-repeat me-1"></i>Mencari produk: <strong>' + decodedText + '</strong>...</span>';
+
+                $.ajax({
+                    url: '<?= site_url("produk/ajax_get_barcode"); ?>',
+                    type: 'POST',
+                    dataType: 'json',
+                    data: { barcode: decodedText },
+                    success: function (response) {
+                        if (response.status === 'success') {
+                            var prd = response.data;
+                            if (parseInt(prd.stok) <= 0) {
+                                document.getElementById('posScannerStatus').innerHTML =
+                                    '<span class="text-warning fw-semibold"><i class="bi bi-exclamation-triangle-fill me-1"></i>Stok "' + prd.nama_produk + '" habis!</span>';
+                            } else {
+                                addProductToCart(prd.id_produk, prd.kode_produk, prd.nama_produk, prd.harga_jual, prd.stok, 1);
+                                document.getElementById('posScannerStatus').innerHTML =
+                                    '<span class="text-success fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>Ditambahkan: <strong>' + prd.nama_produk + '</strong></span>';
+                            }
+                        } else {
+                            document.getElementById('posScannerStatus').innerHTML =
+                                '<span class="text-warning"><i class="bi bi-exclamation-triangle-fill me-1"></i>' + response.message + '</span>';
+                        }
+                        setTimeout(function () {
+                            posScanCooldown = false;
+                            posLastScanned = '';
+                            document.getElementById('posScannerStatus').innerHTML =
+                                '<span class="text-white-50 small"><i class="bi bi-camera-video-fill me-1"></i>Siap scan berikutnya...</span>';
+                        }, 2000);
+                    },
+                    error: function () {
+                        document.getElementById('posScannerStatus').innerHTML =
+                            '<span class="text-danger"><i class="bi bi-x-circle-fill me-1"></i>Gagal menghubungi server.</span>';
+                        setTimeout(function () { posScanCooldown = false; posLastScanned = ''; }, 2000);
+                    }
+                });
+            },
+            function onError() { }
+        ).then(function () {
+            posIsRunning = true;
+            document.getElementById('posScannerStatus').innerHTML =
+                '<span class="text-white-50 small"><i class="bi bi-camera-video-fill me-1"></i>Arahkan kamera ke barcode produk...</span>';
+        }).catch(function (err) {
+            posIsRunning = false;
+            var msg = err ? err.toString() : '';
+            var info = msg.indexOf('NotAllowedError') !== -1 ? 'Izin kamera ditolak. Izinkan akses kamera di browser.' :
+                       msg.indexOf('NotFoundError') !== -1  ? 'Tidak ada kamera pada perangkat ini.' :
+                       'Kamera tidak dapat diakses.';
+            document.getElementById('posScannerStatus').innerHTML =
+                '<span class="text-warning small"><i class="bi bi-exclamation-triangle-fill me-1"></i>' + info + '</span>';
+        });
+    }
+
+    function stopPosScanner() {
+        if (posScanner && posIsRunning) {
+            posScanner.stop().then(function () { posScanner.clear(); posIsRunning = false; }).catch(function () { posIsRunning = false; });
+        }
+    }
+})();
 </script>
