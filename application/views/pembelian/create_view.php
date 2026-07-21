@@ -94,7 +94,7 @@
                 <div class="mb-3">
                     <label for="purchaseBarcodeScanner" class="form-label small fw-semibold text-secondary"><i class="bi bi-upc-scan"></i> Scan Barcode Produk</label>
                     <div class="input-group">
-                        <input type="text" class="form-control bg-light border-primary" id="purchaseBarcodeScanner" placeholder="Scan barcode disini (Enter)..." autocomplete="off">
+                        <input type="text" class="form-control bg-light border-primary" id="purchaseBarcodeScanner" placeholder="Scan barcode disini (Enter)..." autocomplete="off" autofocus>
                         <button type="button" class="btn btn-primary" id="btnOpenPurchaseScanner" title="Scan dengan Kamera">
                             <i class="bi bi-camera-video"></i> Kamera
                         </button>
